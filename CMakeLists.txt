@@ -7,5 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(dep_visualizer
     src/main.cpp
     src/Config.hpp
+    src/DependencyFetcher.hpp
+    src/DependencyFetcher.cpp
 )
 target_include_directories(dep_visualizer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

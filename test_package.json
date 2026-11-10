@@ -1,0 +1,9 @@
+{
+  "package_name": "requests",
+  "dependencies": [
+    "charset-normalizer (>=2,<3)",
+    "idna (<4,>=2.5)",
+    "urllib3 (<1.27,>=1.21.1)",
+    "certifi (>=2017.4.17)"
+  ]
+}
