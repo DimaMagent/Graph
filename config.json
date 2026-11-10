@@ -1,0 +1,6 @@
+{
+  "package_name": "core-engine",
+  "repository_source": "./test_repository.json",
+  "repository_mode": "test_file",
+  "ascii_tree_mode": true
+}
