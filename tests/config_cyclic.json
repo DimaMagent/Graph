@@ -1,6 +1,6 @@
 {
   "package_name": "core",
-  "repository_source": "test_repo.json",
+  "repository_source": "tests/test_repo.json",
   "repository_mode": "test_file",
   "ascii_tree_mode": true,
   "load_order_mode": true

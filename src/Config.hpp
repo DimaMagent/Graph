@@ -12,7 +12,9 @@ struct AppConfig {
     std::string repository_source;
     std::string repository_mode;
     bool ascii_tree_mode{ false };
-    bool load_order_mode{ false }; // Новый параметр для Этапа 4
+    bool load_order_mode{ false };
+    bool mermaid_output_mode{ true };
+    std::string mermaid_output_path{ "graph.mmd" }; // Путь для сохранения .mmd файла
 
     /// Загружает и валидирует конфигурацию из JSON-файла
     static AppConfig load_from_file(const std::string& filepath) {
@@ -62,10 +64,12 @@ struct AppConfig {
         }
 
         // Валидация параметра ascii_tree_mode
-        if (!j.contains("ascii_tree_mode") || !j["ascii_tree_mode"].is_boolean()) {
-            throw std::runtime_error("Параметр 'ascii_tree_mode' отсутствует или имеет неверный тип (ожидается boolean).");
+        if (j.contains("ascii_tree_mode")) {
+            if (!j["ascii_tree_mode"].is_boolean()) {
+                throw std::runtime_error("Параметр 'ascii_tree_mode' имеет неверный тип (ожидается boolean).");
+            }
+            config.ascii_tree_mode = j["ascii_tree_mode"].get<bool>();
         }
-        config.ascii_tree_mode = j["ascii_tree_mode"].get<bool>();
 
         // Валидация параметра load_order_mode
         if (j.contains("load_order_mode")) {
@@ -74,8 +78,17 @@ struct AppConfig {
             }
             config.load_order_mode = j["load_order_mode"].get<bool>();
         }
-        else {
-            config.load_order_mode = false;
+
+        // Валидация параметров Mermaid
+        if (j.contains("mermaid_output_mode")) {
+            if (!j["mermaid_output_mode"].is_boolean()) {
+                throw std::runtime_error("Параметр 'mermaid_output_mode' имеет неверный тип (ожидается boolean).");
+            }
+            config.mermaid_output_mode = j["mermaid_output_mode"].get<bool>();
+        }
+
+        if (j.contains("mermaid_output_path") && j["mermaid_output_path"].is_string()) {
+            config.mermaid_output_path = j["mermaid_output_path"].get<std::string>();
         }
 
         return config;
@@ -83,11 +96,13 @@ struct AppConfig {
 
     void print_parameters() const {
         std::cout << "=== Конфигурация инструмента визуализации графа зависимостей ===\n";
-        std::cout << std::format("{:<20} : {}\n", "package_name", package_name);
-        std::cout << std::format("{:<20} : {}\n", "repository_source", repository_source);
-        std::cout << std::format("{:<20} : {}\n", "repository_mode", repository_mode);
-        std::cout << std::format("{:<20} : {}\n", "ascii_tree_mode", ascii_tree_mode ? "true" : "false");
-        std::cout << std::format("{:<20} : {}\n", "load_order_mode", load_order_mode ? "true" : "false");
+        std::cout << std::format("{:<25} : {}\n", "package_name", package_name);
+        std::cout << std::format("{:<25} : {}\n", "repository_source", repository_source);
+        std::cout << std::format("{:<25} : {}\n", "repository_mode", repository_mode);
+        std::cout << std::format("{:<25} : {}\n", "ascii_tree_mode", ascii_tree_mode ? "true" : "false");
+        std::cout << std::format("{:<25} : {}\n", "load_order_mode", load_order_mode ? "true" : "false");
+        std::cout << std::format("{:<25} : {}\n", "mermaid_output_mode", mermaid_output_mode ? "true" : "false");
+        std::cout << std::format("{:<25} : {}\n", "mermaid_output_path", mermaid_output_path);
         std::cout << "===============================================================\n";
     }
 };

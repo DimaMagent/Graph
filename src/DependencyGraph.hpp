@@ -41,6 +41,26 @@ public:
      */
     void print_load_order(const std::string& root) const;
 
+    /**
+     * Генерация текстового представления в формате Mermaid
+     */
+    std::string generate_mermaid() const;
+
+    /**
+     * Вывод разметки Mermaid в консоль
+     */
+    void print_mermaid() const;
+
+    /**
+     * Сохранение Mermaid в файл
+     */
+    void export_mermaid(const std::string& filepath) const;
+
+    /**
+     * Экспорт в HTML с динамической визуализацией Mermaid через CDN
+     */
+    void export_html_visualization(const std::string& html_filepath) const;
+
 private:
     void print_ascii_tree_recursive(const std::string& node, const std::string& prefix, bool is_last, std::vector<std::string> ancestors) const;
 };

@@ -10,14 +10,14 @@ int main(int argc, char* argv[]) {
 
     std::string config_path = (argc > 1) ? argv[1] : "config.json";
 
-    std::cout << "Запуск приложения (Этап 4: Дополнительные операции)...\n";
+    std::cout << "Запуск приложения (Этап 5: Визуализация)...\n";
     std::cout << "Использование файла конфигурации: " << config_path << "\n\n";
 
     try {
         AppConfig config = AppConfig::load_from_file(config_path);
         config.print_parameters();
 
-        std::cout << "\nПостроение графа зависимостей с учетом транзитивности (BFS без рекурсии) для пакета '" << config.package_name << "'...\n";
+        std::cout << "\nПостройка графа зависимостей для пакета '" << config.package_name << "'...\n";
 
         DependencyGraph graph;
         graph.build_bfs(config.package_name, config.repository_source, config.repository_mode);
@@ -33,6 +33,14 @@ int main(int argc, char* argv[]) {
 
         if (config.load_order_mode) {
             graph.print_load_order(config.package_name);
+        }
+
+        if (config.mermaid_output_mode) {
+            graph.print_mermaid();
+            graph.export_mermaid(config.mermaid_output_path);
+
+            std::string html_output_path = config.mermaid_output_path + ".html";
+            graph.export_html_visualization(html_output_path);
         }
 
     }

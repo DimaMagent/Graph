@@ -61,12 +61,20 @@ std::string DependencyFetcher::fetch_from_url(const std::string& url) {
 
 std::string DependencyFetcher::fetch_from_file(const std::string& filepath) {
     std::ifstream file(filepath);
+    std::string active_path = filepath;
+
     if (!file.is_open()) {
-        throw std::runtime_error(std::format("Не удалось открыть тестовый файл: '{}'", filepath));
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
+    active_path = "tests/" + filepath;
+    file.open(active_path);
+}
+
+if (!file.is_open()) {
+    throw std::runtime_error(std::format("Не удалось открыть тестовый файл ни по пути '{}', ни по пути 'tests/{}'", filepath, filepath));
+}
+
+std::stringstream buffer;
+buffer << file.rdbuf();
+return buffer.str();
 }
 
 std::string DependencyFetcher::extract_package_name(const std::string& requirement_str, bool preserve_case) {
@@ -86,7 +94,7 @@ std::string DependencyFetcher::extract_package_name(const std::string& requireme
 std::vector<std::string> DependencyFetcher::parse_json_dependencies(const nlohmann::json& j, const std::string& package_name, bool preserve_case) {
     std::vector<std::string> dependencies;
 
-    // Требование 3: Формат файла тестового репозитория (словарь со списком зависимостей для каждого пакета)
+    // Формат файла тестового репозитория (словарь со списком зависимостей для каждого пакета)
     if (j.contains(package_name) && j[package_name].is_array()) {
         for (const auto& dep : j[package_name]) {
             if (dep.is_string()) {

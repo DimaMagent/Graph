@@ -3,5 +3,7 @@
   "repository_source": "tests/test_repo.json",
   "repository_mode": "test_file",
   "ascii_tree_mode": true,
-  "load_order_mode": true
+  "load_order_mode": true,
+  "mermaid_output_mode": true,
+  "mermaid_output_path": "graph.mmd"
 }

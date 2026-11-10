@@ -2,115 +2,76 @@
 chcp 65001 >nul
 setlocal EnableDelayedExpansion
 
-set "INPUT_ARG=%~1"
-set "CONFIG_FILE=config.json"
-
-:: Случай 1: Пользователь передал аргумент (имя файла или путь)
-if not "!INPUT_ARG!"=="" (
-    if exist "!INPUT_ARG!" (
-        set "TARGET_FILE=!INPUT_ARG!"
-    ) else if exist "tests\!INPUT_ARG!" (
-        set "TARGET_FILE=tests\!INPUT_ARG!"
-    ) else (
-        echo [ОШИБКА]: Указанный файл "!INPUT_ARG!" не найден ни в текущей директории, ни в папке tests\!
-        goto error
-    )
-    
-    :: Исправлено: правильный синтаксис замен с отложенным расширением (!...!)
-    set "TARGET_FILE_JSON=!TARGET_FILE:\=/%"
-    
-    findstr /C:"repository_mode" "!TARGET_FILE!" >nul
-    if !errorlevel! equ 0 (
-        set "CONFIG_FILE=!TARGET_FILE!"
-        echo [+] Используется переданный файл конфигурации: !CONFIG_FILE!
-    ) else (
-        echo [+] Обнаружен тестовый файл репозитория: !TARGET_FILE!
-        echo [+] Создание временной конфигурации для тестирования...
-        
-        echo { > temp_auto_config.json
-        echo   "package_name": "A", >> temp_auto_config.json
-        echo   "repository_source": "!TARGET_FILE_JSON!", >> temp_auto_config.json
-        echo   "repository_mode": "test_file", >> temp_auto_config.json
-        echo   "ascii_tree_mode": true >> temp_auto_config.json
-        echo } >> temp_auto_config.json
-        
-        set "CONFIG_FILE=temp_auto_config.json"
-    )
-) else (
-    :: Случай 2: Аргумент не передан, используется config.json по умолчанию
-    if not exist "config.json" (
-        echo [ОШИБКА]: Файл конфигурации по умолчанию "config.json" не найден!
-        goto error
-    )
-    echo [+] Используется конфигурация по умолчанию: config.json
-
-    for %%f in (test_repo_cyclic.json test_repo_linear.json test_repo_branch.json) do (
-        findstr /C:"%%f" "config.json" >nul
-        if !errorlevel! equ 0 (
-            if not exist "%%f" if exist "tests\%%f" (
-                echo [+] Автоматически определено: файл "%%f" найден в папке tests\
-                echo [+] Создание временной конфигурации...
-                
-                echo { > temp_auto_config.json
-                echo   "package_name": "A", >> temp_auto_config.json
-                echo   "repository_source": "tests/%%f", >> temp_auto_config.json
-                echo   "repository_mode": "test_file", >> temp_auto_config.json
-                echo   "ascii_tree_mode": true >> temp_auto_config.json
-                echo } >> temp_auto_config.json
-                
-                set "CONFIG_FILE=temp_auto_config.json"
-            )
-        )
-    )
-)
-
-echo [+] Поиск исполняемого файла dep_visualizer.exe...
-
+:: 1. Поиск исполняемого файла dep_visualizer.exe в стандартных путях сборки
 set "EXE_PATH="
-
-if exist "out\build\x64-Debug\dep_visualizer.exe" (
-    set "EXE_PATH=out\build\x64-Debug\dep_visualizer.exe"
-) else if exist "out\build\x64-Release\dep_visualizer.exe" (
-    set "EXE_PATH=out\build\x64-Release\dep_visualizer.exe"
-) else if exist "out\build\x64-Debug\Release\dep_visualizer.exe" (
-    set "EXE_PATH=out\build\x64-Debug\Release\dep_visualizer.exe"
-) else if exist "out\build\x64-Debug\Debug\dep_visualizer.exe" (
-    set "EXE_PATH=out\build\x64-Debug\Debug\dep_visualizer.exe"
-) else if exist "build\Release\dep_visualizer.exe" (
-    set "EXE_PATH=build\Release\dep_visualizer.exe"
-) else if exist "build\Debug\dep_visualizer.exe" (
-    set "EXE_PATH=build\Debug\dep_visualizer.exe"
-) else if exist "build\dep_visualizer.exe" (
-    set "EXE_PATH=build\dep_visualizer.exe"
+for %%p in (
+    "out\build\x64-Debug\dep_visualizer.exe"
+    "out\build\x64-Release\dep_visualizer.exe"
+    "out\build\x64-Debug\Release\dep_visualizer.exe"
+    "out\build\x64-Debug\Debug\dep_visualizer.exe"
+    "build\Release\dep_visualizer.exe"
+    "build\Debug\dep_visualizer.exe"
+    "build\dep_visualizer.exe"
+) do (
+    if exist %%p (
+        set "EXE_PATH=%%~p"
+        goto found_exe
+    )
 )
 
+:found_exe
 if "!EXE_PATH!"=="" (
-    echo [ОШИБКА]: Исполняемый файл dep_visualizer.exe не найден ни в одной из стандартных папок!
-    echo Убедитесь, что проект успешно собран.
+    echo [ОШИБКА]: Исполняемый файл dep_visualizer.exe не найден ни в одной из папок сборки!
+    echo Убедитесь, что проект успешно скомпилирован.
     goto error
 )
 
 echo [+] Найден исполняемый файл: !EXE_PATH!
-echo [+] Используется конфигурация: !CONFIG_FILE!
-echo ---------------------------------------------------------------
-echo [+] Запуск приложения...
-echo.
 
-"!EXE_PATH!" "!CONFIG_FILE!"
-set "EXIT_CODE=!errorlevel!"
+:: 2. Обработка аргументов командной строки
+set "INPUT_ARG=%~1"
 
-if exist "temp_auto_config.json" del "temp_auto_config.json"
+if not "!INPUT_ARG!"=="" (
+    set "CONFIG_FILE=!INPUT_ARG!"
+    if not exist "!CONFIG_FILE!" if exist "tests\!INPUT_ARG!" set "CONFIG_FILE=tests\!INPUT_ARG!"
+    if not exist "!CONFIG_FILE!" if exist "config_!INPUT_ARG!.json" set "CONFIG_FILE=config_!INPUT_ARG!.json"
+    
+    if not exist "!CONFIG_FILE!" (
+        echo [ОШИБКА]: Указанный конфигурационный файл "!INPUT_ARG!" не найден!
+        goto error
+    )
+    
+    echo [+] Запуск с конфигурацией: !CONFIG_FILE!
+    echo ---------------------------------------------------------------
+    "!EXE_PATH!" "!CONFIG_FILE!"
+    goto end
+)
 
-if !EXIT_CODE! neq 0 (
-    echo.
-    echo [ОШИБКА]: Приложение завершилось с кодом !EXIT_CODE!.
-    goto error
+:: 3. Если аргумент не передан: ищем и запускаем 3 конфига (в корне или в tests\)
+echo [+] Аргумент не передан. Запуск демонстрации для 3 конфигураций...
+
+for %%c in (config_linear.json config_cyclic.json config_diamond.json) do (
+    set "TARGET_CFG="
+    if exist "%%c" (
+        set "TARGET_CFG=%%c"
+    ) else if exist "tests\%%c" (
+        set "TARGET_CFG=tests\%%c"
+    )
+
+    if not "!TARGET_CFG!"=="" (
+        echo.
+        echo ===============================================================
+        echo [+] Демонстрация конфигурации: !TARGET_CFG!
+        echo ===============================================================
+        "!EXE_PATH!" "!TARGET_CFG!"
+    ) else (
+        echo [ПРЕДУПРЕЖДЕНИЕ]: Файл %%c не найден ни в корне, ни в папке tests\
+    )
 )
 
 goto end
 
 :error
-if exist "temp_auto_config.json" del "temp_auto_config.json"
 echo.
 echo [ОШИБКА]: Процесс завершился с ошибкой.
 pause
