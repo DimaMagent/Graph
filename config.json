@@ -1,6 +1,6 @@
 {
-  "package_name": "requests",
-  "repository_source": "https://pypi.org/pypi",
-  "repository_mode": "remote_url",
-  "ascii_tree_mode": false
+  "package_name": "A",
+  "repository_source": "test_repo_cyclic.json",
+  "repository_mode": "test_file",
+  "ascii_tree_mode": true
 }
