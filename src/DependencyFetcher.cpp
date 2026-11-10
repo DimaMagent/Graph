@@ -8,7 +8,6 @@
 #include <array>
 #include <cstdio>
 
-// Выполнение HTTP GET запроса с использованием системных средств (curl / powershell)
 std::string DependencyFetcher::fetch_from_url(const std::string& url) {
     std::string command;
 #if defined(_WIN32)
@@ -42,7 +41,6 @@ std::string DependencyFetcher::fetch_from_url(const std::string& url) {
 
     if (return_code != 0 || result.empty()) {
 #if defined(_WIN32)
-        // Запасной вариант через PowerShell для Windows
         std::string ps_command = std::format("powershell -Command \"(Invoke-WebRequest -Uri '{}' -UseBasicParsing).Content\"", url);
         FILE* ps_pipe = _popen(ps_command.c_str(), "r");
         if (ps_pipe) {
@@ -71,8 +69,7 @@ std::string DependencyFetcher::fetch_from_file(const std::string& filepath) {
     return buffer.str();
 }
 
-// Извлечение чистого имени пакета из формата PEP 508 (например, "requests (>=2.20)" -> "requests")
-std::string DependencyFetcher::extract_package_name(const std::string& requirement_str) {
+std::string DependencyFetcher::extract_package_name(const std::string& requirement_str, bool preserve_case) {
     std::string name;
     for (char c : requirement_str) {
         if (c == ' ' || c == ';' || c == '(' || c == '[' || c == '<' || c == '>' || c == '=' || c == '~' || c == '!') {
@@ -80,20 +77,32 @@ std::string DependencyFetcher::extract_package_name(const std::string& requireme
         }
         name.push_back(c);
     }
-    // Стандартизация регистра имен в Python
-    std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
+    if (!preserve_case) {
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return std::tolower(c); });
+    }
     return name;
 }
 
-std::vector<std::string> DependencyFetcher::parse_json_dependencies(const nlohmann::json& j) {
+std::vector<std::string> DependencyFetcher::parse_json_dependencies(const nlohmann::json& j, const std::string& package_name, bool preserve_case) {
     std::vector<std::string> dependencies;
 
-    // Поддержка стандартного формата PyPI JSON API (requires_dist)
-    if (j.contains("info") && j["info"].contains("requires_dist") && !j["info"]["requires_dist"].is_null()) {
+    // Требование 3: Формат файла тестового репозитория (словарь со списком зависимостей для каждого пакета)
+    if (j.contains(package_name) && j[package_name].is_array()) {
+        for (const auto& dep : j[package_name]) {
+            if (dep.is_string()) {
+                std::string pkg_name = extract_package_name(dep.get<std::string>(), preserve_case);
+                if (!pkg_name.empty()) {
+                    dependencies.push_back(pkg_name);
+                }
+            }
+        }
+    }
+    // Стандартный формат PyPI JSON API
+    else if (j.contains("info") && j["info"].contains("requires_dist") && !j["info"]["requires_dist"].is_null()) {
         if (j["info"]["requires_dist"].is_array()) {
             for (const auto& req : j["info"]["requires_dist"]) {
                 if (req.is_string()) {
-                    std::string pkg_name = extract_package_name(req.get<std::string>());
+                    std::string pkg_name = extract_package_name(req.get<std::string>(), preserve_case);
                     if (!pkg_name.empty()) {
                         dependencies.push_back(pkg_name);
                     }
@@ -101,11 +110,10 @@ std::vector<std::string> DependencyFetcher::parse_json_dependencies(const nlohma
             }
         }
     }
-    // Поддержка упрощенного локального формата для тестов (список dependencies)
     else if (j.contains("dependencies") && j["dependencies"].is_array()) {
         for (const auto& dep : j["dependencies"]) {
             if (dep.is_string()) {
-                std::string pkg_name = extract_package_name(dep.get<std::string>());
+                std::string pkg_name = extract_package_name(dep.get<std::string>(), preserve_case);
                 if (!pkg_name.empty()) {
                     dependencies.push_back(pkg_name);
                 }
@@ -113,7 +121,6 @@ std::vector<std::string> DependencyFetcher::parse_json_dependencies(const nlohma
         }
     }
 
-    // Удаление возможных дубликатов
     std::sort(dependencies.begin(), dependencies.end());
     dependencies.erase(std::unique(dependencies.begin(), dependencies.end()), dependencies.end());
 
@@ -126,6 +133,7 @@ std::vector<std::string> DependencyFetcher::fetch_dependencies(
     const std::string& repository_mode
 ) {
     std::string raw_json_data;
+    bool preserve_case = (repository_mode == "test_file");
 
     if (repository_mode == "test_file") {
         raw_json_data = fetch_from_file(repository_source);
@@ -152,5 +160,5 @@ std::vector<std::string> DependencyFetcher::fetch_dependencies(
         throw std::runtime_error(std::format("Ошибка разбора JSON для пакета '{}': {}", package_name, e.what()));
     }
 
-    return parse_json_dependencies(j);
+    return parse_json_dependencies(j, package_name, preserve_case);
 }

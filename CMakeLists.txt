@@ -9,5 +9,7 @@ add_executable(dep_visualizer
     src/Config.hpp
     src/DependencyFetcher.hpp
     src/DependencyFetcher.cpp
+    src/DependencyGraph.cpp
+    src/DependencyGraph.hpp
 )
 target_include_directories(dep_visualizer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
