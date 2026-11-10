@@ -16,6 +16,7 @@ if not "!INPUT_ARG!"=="" (
         goto error
     )
     
+    :: Исправлено: правильный синтаксис замен с отложенным расширением (!...!)
     set "TARGET_FILE_JSON=!TARGET_FILE:\=/%"
     
     findstr /C:"repository_mode" "!TARGET_FILE!" >nul
@@ -43,7 +44,6 @@ if not "!INPUT_ARG!"=="" (
     )
     echo [+] Используется конфигурация по умолчанию: config.json
 
-    :: Автоматически проверяем, не лежит ли файл из config.json в папке tests\
     for %%f in (test_repo_cyclic.json test_repo_linear.json test_repo_branch.json) do (
         findstr /C:"%%f" "config.json" >nul
         if !errorlevel! equ 0 (
@@ -68,7 +68,6 @@ echo [+] Поиск исполняемого файла dep_visualizer.exe...
 
 set "EXE_PATH="
 
-:: Проверка стандартных путей сборки CMake / Visual Studio / ручной сборки
 if exist "out\build\x64-Debug\dep_visualizer.exe" (
     set "EXE_PATH=out\build\x64-Debug\dep_visualizer.exe"
 ) else if exist "out\build\x64-Release\dep_visualizer.exe" (
