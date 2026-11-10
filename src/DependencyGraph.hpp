@@ -36,6 +36,11 @@ public:
 
     void print_ascii_tree(const std::string& root, const std::string& prefix = "", bool is_last = true) const;
 
+    /**
+     * ¬ывод пор€дка загрузки/установки зависимостей
+     */
+    void print_load_order(const std::string& root) const;
+
 private:
     void print_ascii_tree_recursive(const std::string& node, const std::string& prefix, bool is_last, std::vector<std::string> ancestors) const;
 };

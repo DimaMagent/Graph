@@ -1,6 +1,7 @@
 {
-  "package_name": "A",
-  "repository_source": "test_repo_cyclic.json",
+  "package_name": "app",
+  "repository_source": "tests/test_repo.json",
   "repository_mode": "test_file",
-  "ascii_tree_mode": true
+  "ascii_tree_mode": true,
+  "load_order_mode": true
 }

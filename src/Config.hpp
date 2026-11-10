@@ -12,6 +12,7 @@ struct AppConfig {
     std::string repository_source;
     std::string repository_mode;
     bool ascii_tree_mode{ false };
+    bool load_order_mode{ false }; // Новый параметр для Этапа 4
 
     /// Загружает и валидирует конфигурацию из JSON-файла
     static AppConfig load_from_file(const std::string& filepath) {
@@ -66,6 +67,17 @@ struct AppConfig {
         }
         config.ascii_tree_mode = j["ascii_tree_mode"].get<bool>();
 
+        // Валидация параметра load_order_mode
+        if (j.contains("load_order_mode")) {
+            if (!j["load_order_mode"].is_boolean()) {
+                throw std::runtime_error("Параметр 'load_order_mode' имеет неверный тип (ожидается boolean).");
+            }
+            config.load_order_mode = j["load_order_mode"].get<bool>();
+        }
+        else {
+            config.load_order_mode = false;
+        }
+
         return config;
     }
 
@@ -75,6 +87,7 @@ struct AppConfig {
         std::cout << std::format("{:<20} : {}\n", "repository_source", repository_source);
         std::cout << std::format("{:<20} : {}\n", "repository_mode", repository_mode);
         std::cout << std::format("{:<20} : {}\n", "ascii_tree_mode", ascii_tree_mode ? "true" : "false");
+        std::cout << std::format("{:<20} : {}\n", "load_order_mode", load_order_mode ? "true" : "false");
         std::cout << "===============================================================\n";
     }
 };

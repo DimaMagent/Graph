@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
 
     std::string config_path = (argc > 1) ? argv[1] : "config.json";
 
-    std::cout << "Запуск приложения (Этап 3: Основные операции)...\n";
+    std::cout << "Запуск приложения (Этап 4: Дополнительные операции)...\n";
     std::cout << "Использование файла конфигурации: " << config_path << "\n\n";
 
     try {
@@ -29,6 +29,10 @@ int main(int argc, char* argv[]) {
             std::cout << "\n=== Дерево зависимостей (ASCII) ===\n";
             graph.print_ascii_tree(config.package_name);
             std::cout << "===================================\n";
+        }
+
+        if (config.load_order_mode) {
+            graph.print_load_order(config.package_name);
         }
 
     }

@@ -1,4 +1,5 @@
 #include "DependencyGraph.hpp"
+#include <functional>
 
 void DependencyGraph::build_bfs(const std::string& root_package, const std::string& repository_source, const std::string& repository_mode) {
     adj_list_.clear();
@@ -109,4 +110,44 @@ void DependencyGraph::print_ascii_tree_recursive(const std::string& node, const 
             print_ascii_tree_recursive(deps[i], prefix + (is_last ? "    " : "|   "), last, ancestors);
         }
     }
+}
+
+void DependencyGraph::print_load_order(const std::string& root) const {
+    std::cout << "\n=== Этап 4: Порядок загрузки и установки зависимостей (Topological Order) ===\n";
+    std::vector<std::string> order;
+    std::unordered_set<std::string> visited;
+    std::unordered_set<std::string> visiting;
+
+    std::function<void(const std::string&)> dfs = [&](const std::string& node) {
+        if (visiting.find(node) != visiting.end()) {
+            return; // Предотвращение зацикливания при обходе циклического графа
+        }
+        if (visited.find(node) != visited.end()) {
+            return;
+        }
+        visiting.insert(node);
+
+        auto it = adj_list_.find(node);
+        if (it != adj_list_.end()) {
+            for (const auto& dep : it->second) {
+                dfs(dep);
+            }
+        }
+
+        visiting.erase(node);
+        visited.insert(node);
+        order.push_back(node);
+        };
+
+    dfs(root);
+
+    if (order.empty()) {
+        std::cout << "Порядок загрузки пуст.\n";
+    }
+    else {
+        for (size_t i = 0; i < order.size(); ++i) {
+            std::cout << std::format("{}. {}\n", i + 1, order[i]);
+        }
+    }
+    std::cout << "========================================================================\n";
 }
